@@ -3,6 +3,7 @@ from typing import List
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from blog.views import logout_view
 from django.urls import URLPattern, include, path
 
 handler403 = "pages.views.permission_denied"
@@ -15,6 +16,7 @@ urlpatterns: List[URLPattern] = [
     path("", include("blog.urls", namespace="blog")),
     # Вся логика работы с пользователями в приложении users.
     # Но pytest требовал добавленного в явном виде инклуда в этот urls.
+    path('auth/logout/', logout_view, name='logout'),
     path("auth/", include("django.contrib.auth.urls")),
     path("admin/", admin.site.urls),
 ]

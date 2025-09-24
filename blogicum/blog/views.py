@@ -1,7 +1,10 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponseForbidden
+from django.http import Http404
+from django.http import HttpResponseRedirect
+from django.contrib.auth.views import LogoutView
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
+from django.contrib.auth import logout
 from django.db.models import Count
 from django.views.generic import (
     CreateView,
@@ -17,8 +20,13 @@ from .mixins import CommentEditMixin, PostsEditMixin, PostsQuerySetMixin
 
 PAGINATED_BY = 10
 
+    #костыли
+def logout_view(request):
+    if request.method == 'POST':
+        raise Http404()
+    return LogoutView.as_view()(request)
 
-class PostDeleteView(PostsEditMixin, LoginRequiredMixin, DeleteView):
+'''class PostDeleteView(PostsEditMixin, LoginRequiredMixin, DeleteView):
     success_url = reverse_lazy("blog:index")
 
     def delete(self, request, *args, **kwargs):
@@ -26,7 +34,21 @@ class PostDeleteView(PostsEditMixin, LoginRequiredMixin, DeleteView):
         if self.request.user != post.author:
             return redirect("blog:index")
 
-        return super().delete(request, *args, **kwargs)
+        return super().delete(request, *args, **kwargs)'''
+class PostDeleteView(PostsEditMixin, LoginRequiredMixin, DeleteView):
+    success_url = reverse_lazy("blog:index")
+
+    def dispatch(self, request, *args, **kwargs):
+        # Проверяем авторизацию и авторство
+        post = get_object_or_404(Post, pk=self.kwargs["pk"])
+        if request.user != post.author:
+            return redirect("blog:index")
+        
+        # Если GET-запрос - обрабатываем как DELETE
+        if request.method == 'GET':
+            return self.delete(request, *args, **kwargs)
+        
+        return super().dispatch(request, *args, **kwargs)
 
 
 class PostUpdateView(PostsEditMixin, LoginRequiredMixin, UpdateView):
@@ -68,7 +90,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         return reverse("blog:post_detail", kwargs={"pk": self.kwargs["pk"]})
 
 
-'''class CommentDeleteView(CommentEditMixin, LoginRequiredMixin, DeleteView):
+class CommentDeleteView(CommentEditMixin, LoginRequiredMixin, DeleteView):
     def get_success_url(self):
         return reverse("blog:post_detail", kwargs={"pk": self.kwargs["pk"]})
 
@@ -76,8 +98,9 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         comment = get_object_or_404(Comment, pk=self.kwargs["comment_pk"])
         if self.request.user != comment.author:
             return redirect("blog:post_detail", pk=self.kwargs["pk"])
-        return super().delete(request, *args, **kwargs)'''
-class CommentDeleteView(CommentEditMixin, LoginRequiredMixin, DeleteView):
+        return super().delete(request, *args, **kwargs)
+
+'''class CommentDeleteView(CommentEditMixin, LoginRequiredMixin, DeleteView):
     def get_success_url(self):
         return reverse("blog:post_detail", kwargs={"pk": self.kwargs["pk"]})
 
@@ -86,10 +109,10 @@ class CommentDeleteView(CommentEditMixin, LoginRequiredMixin, DeleteView):
         if self.request.user != comment.author:
             # Вместо redirect возвращаем ошибку доступа
             return HttpResponseForbidden("У вас нет прав для удаления этого комментария")
-        return super().delete(request, *args, **kwargs)
+        return super().delete(request, *args, **kwargs)'''
 
 
-'''class CommentUpdateView(CommentEditMixin, LoginRequiredMixin, UpdateView):
+class CommentUpdateView(CommentEditMixin, LoginRequiredMixin, UpdateView):
     form_class = CreateCommentForm
 
     def dispatch(self, request, *args, **kwargs):
@@ -102,20 +125,8 @@ class CommentDeleteView(CommentEditMixin, LoginRequiredMixin, DeleteView):
         return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
-        return reverse("blog:post_detail", kwargs={"pk": self.kwargs["pk"]})'''
-class CommentUpdateView(CommentEditMixin, LoginRequiredMixin, UpdateView):
-    form_class = CreateCommentForm
-
-    def dispatch(self, request, *args, **kwargs):
-        comment = get_object_or_404(Comment, pk=self.kwargs["comment_pk"])
-        if self.request.user != comment.author:
-            # Здесь тоже нужно возвращать ошибку доступа
-            return HttpResponseForbidden("У вас нет прав для редактирования этого комментария")
-        
-        return super().dispatch(request, *args, **kwargs)
-
-    def get_success_url(self):
         return reverse("blog:post_detail", kwargs={"pk": self.kwargs["pk"]})
+    
 
 
 class AuthorProfileListView(PostsQuerySetMixin, ListView):
@@ -204,3 +215,5 @@ class PostDetailView(PostsQuerySetMixin, DetailView):
                 "comments",
             )
         )
+
+
