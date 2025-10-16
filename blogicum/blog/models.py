@@ -8,10 +8,8 @@ User = get_user_model()
 
 
 class PubCreateModel(models.Model):
-    """Абстрактная модель.
-    
-    Добавляет к модели дату создания и флаг "опубликовано".
-    """
+    """Абстрактная модель с полями публикации и даты создания."""
+
 
     created_at = models.DateTimeField(
         auto_now_add=True,
@@ -39,7 +37,7 @@ class Category(PubCreateModel):
             'Идентификатор страницы для URL; '
             'разрешены символы латиницы, цифры, дефис и подчёркивание.'
         )
-    )  
+    )
     class Meta:
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
@@ -106,6 +104,7 @@ class Post(PubCreateModel):
         ordering = ("-pub_date",)
 
     def __str__(self):
+
         return self.title
 
     def get_absolute_url(self):

@@ -28,4 +28,3 @@ class PostAdmin(admin.ModelAdmin):
 class CommentAdmin(admin.ModelAdmin):
     list_display = ('author', 'post', 'is_published')
     list_editable = ('is_published',)
-    

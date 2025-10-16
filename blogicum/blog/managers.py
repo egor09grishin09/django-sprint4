@@ -25,3 +25,4 @@ class PostManager(models.Manager):
     def get_post_data(self, pk):
         """Возвращает данные поста."""
         return get_object_or_404(self.post_all_query(), pk=pk)
+    

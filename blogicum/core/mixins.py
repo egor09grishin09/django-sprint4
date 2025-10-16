@@ -1,4 +1,3 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
@@ -59,14 +58,14 @@ class PostQuerySetMixin:
             if post_data.author == self.request.user:
                 return Post.objects.post_all_query().filter(pk=post_data.pk)
             return Post.objects.post_published_query().filter(
-                    pk=post_data.pk
-                )
+                pk=post_data.pk
+            )
         else:
             if author == self.request.user:
                 return Post.objects.post_all_query().filter(author=author)
             return Post.objects.post_published_query().filter(
-                    author=author
-                )
+                author=author
+            )
 
 
 class NotAuthorRedirectMixin:
