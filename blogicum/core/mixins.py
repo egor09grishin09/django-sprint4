@@ -10,7 +10,7 @@ from blog.models import Comment, Post
 User = get_user_model()
 
 
-class CommentMixinView(LoginRequiredMixin, View):
+class CommentMixinView(View):
     """Миксин для редактирования и удаления комментария."""
 
     model = Comment
@@ -58,15 +58,13 @@ class PostQuerySetMixin:
         if post_data:
             if post_data.author == self.request.user:
                 return Post.objects.post_all_query().filter(pk=post_data.pk)
-            else:
-                return Post.objects.post_published_query().filter(
+            return Post.objects.post_published_query().filter(
                     pk=post_data.pk
                 )
         else:
             if author == self.request.user:
                 return Post.objects.post_all_query().filter(author=author)
-            else:
-                return Post.objects.post_published_query().filter(
+            return Post.objects.post_published_query().filter(
                     author=author
                 )
 

@@ -1,7 +1,9 @@
+from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import send_mail
+from django.http import Http404
 from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy, reverse
+from django.urls import reverse
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -11,14 +13,13 @@ from django.views.generic import (
 )
 
 from blog.forms import CommentForm, PostForm, UserEditForm
-from blog.models import Post, Category, Comment, User
+from blog.models import Category, Comment, Post, User
+from constants import PAGINATION_QTY
 from core.mixins import (
     CommentMixinView,
+    NotAuthorRedirectMixin,
     PostQuerySetMixin,
-    NotAuthorRedirectMixin
 )
-
-PAGINATION_QTY = 10
 
 
 class MainPostsListView(ListView):
@@ -109,19 +110,15 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         return reverse("blog:profile", kwargs={"username": username})
 
 
-class EditPostView(NotAuthorRedirectMixin, LoginRequiredMixin, UpdateView):
+class EditPostView(LoginRequiredMixin, NotAuthorRedirectMixin, UpdateView):
     """Редактирование поста."""
 
     model = Post
     form_class = PostForm
     template_name = "blog/create.html"
 
-    def get_success_url(self):
-        pk = self.kwargs["pk"]
-        return reverse("blog:post_detail", kwargs={"pk": pk})
 
-
-class DeletePostView(NotAuthorRedirectMixin, LoginRequiredMixin, DeleteView):
+class DeletePostView(LoginRequiredMixin, NotAuthorRedirectMixin, DeleteView):
     """Удаление поста."""
 
     model = Post
@@ -134,7 +131,7 @@ class DeletePostView(NotAuthorRedirectMixin, LoginRequiredMixin, DeleteView):
 
     def get_success_url(self):
         username = self.request.user
-        return reverse_lazy("blog:profile", kwargs={"username": username})
+        return reverse("blog:profile", kwargs={"username": username})
 
 
 class CommentCreateView(LoginRequiredMixin, CreateView):
@@ -143,36 +140,35 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     model = Comment
     form_class = CommentForm
     template_name = "blog/comment.html"
-    post_data = None
-
-    def dispatch(self, request, *args, **kwargs):
-        self.post_data = Post.objects.get_post_data(self.kwargs['pk'])
-        return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
         form.instance.author = self.request.user
-        form.instance.post = self.post_data
-        if self.post_data.author != self.request.user:
-            self.send_author_email()
+        post = Post.objects.get_post_data(self.kwargs['pk'])
+        if not post:
+            raise Http404("Post not found")
+            
+        form.instance.post = post
+        if post.author != self.request.user:
+            self.send_author_email(post)
         return super().form_valid(form)
 
     def get_success_url(self):
         pk = self.kwargs["pk"]
         return reverse("blog:post_detail", kwargs={"pk": pk})
 
-    def send_author_email(self):
+    def send_author_email(self, post):
         post_url = self.request.build_absolute_uri(self.get_success_url())
-        recipient_email = self.post_data.author.email
+        recipient_email = post.author.email
         subject = "New comment"
         message = (
             f"Пользователь {self.request.user} добавил "
-            f"комментарий к посту {self.post_data.title}.\n"
+            f"комментарий к посту {post.title}.\n"
             f"Читать комментарий {post_url}"
         )
         send_mail(
             subject=subject,
             message=message,
-            from_email="from@email.com",
+            from_email=settings.EMAIL_FROM,
             recipient_list=[recipient_email],
             fail_silently=True,
         )
@@ -186,5 +182,3 @@ class EditCommentView(CommentMixinView, UpdateView):
 
 class DeleteCommentView(CommentMixinView, DeleteView):
     """Удаление комментария."""
-
-    ...

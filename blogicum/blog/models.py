@@ -1,40 +1,15 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils import timezone
-
+from constants import limit
+from blog.managers import PostManager
 
 User = get_user_model()
 
 
-class PostManager(models.Manager):
-    def post_all_query(self):
-        """Возвращает все посты."""
-        return self.get_queryset().select_related(
-            "category",
-            "location",
-            "author"
-        ).annotate(
-            comment_count=models.Count("comments")
-        ).order_by("-pub_date")
-
-    def post_published_query(self):
-        """Возвращает опубликованные посты."""
-        return self.post_all_query().filter(
-            pub_date__lte=timezone.now(),
-            is_published=True,
-            category__is_published=True,
-        )
-
-    def get_post_data(self, pk):
-        """Возвращает данные поста."""
-        return get_object_or_404(self.post_all_query(), pk=pk)
-
-
-class BaseModel(models.Model):
-    """
-    Абстрактная модель.
+class PubCreateModel(models.Model):
+    """Абстрактная модель.
+    
     Добавляет к модели дату создания и флаг "опубликовано".
     """
 
@@ -52,7 +27,7 @@ class BaseModel(models.Model):
         abstract = True
 
 
-class Category(BaseModel):
+class Category(PubCreateModel):
     """Категория."""
 
     title = models.CharField(max_length=256, verbose_name='Заголовок')
@@ -60,10 +35,11 @@ class Category(BaseModel):
     slug = models.SlugField(
         unique=True,
         verbose_name='Идентификатор',
-        help_text='Идентификатор страницы для URL; '
-        'разрешены символы латиницы, цифры, дефис и подчёркивание.',
-    )
-
+        help_text=(
+            'Идентификатор страницы для URL; '
+            'разрешены символы латиницы, цифры, дефис и подчёркивание.'
+        )
+    )  
     class Meta:
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
@@ -73,7 +49,7 @@ class Category(BaseModel):
         return self.title
 
 
-class Location(BaseModel):
+class Location(PubCreateModel):
     """Местоположение."""
 
     name = models.CharField(max_length=256, verbose_name='Название места')
@@ -87,7 +63,7 @@ class Location(BaseModel):
         return self.name
 
 
-class Post(BaseModel):
+class Post(PubCreateModel):
     """Пост."""
 
     title = models.CharField(max_length=256, verbose_name='Заголовок')
@@ -136,7 +112,7 @@ class Post(BaseModel):
         return reverse('blog:post_detail', kwargs={'pk': self.pk})
 
 
-class Comment(BaseModel):
+class Comment(PubCreateModel):
     """Комментарий."""
 
     text = models.TextField('Текст комментария')
@@ -162,7 +138,4 @@ class Comment(BaseModel):
         ordering = ('created_at',)
 
     def __str__(self):
-        return self.text[:30]
-
-    def get_absolute_url(self):
-        return reverse('blog:post_detail', kwargs={'pk': self.post.pk})
+        return self.text[:limit]
