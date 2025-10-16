@@ -145,7 +145,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         form.instance.author = self.request.user
         post = Post.objects.get_post_data(self.kwargs['pk'])
         if not post:
-            raise Http404("Post not found")    
+            raise Http404("Post not found")
         form.instance.post = post
         if post.author != self.request.user:
             self.send_author_email(post)

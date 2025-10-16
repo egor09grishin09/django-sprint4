@@ -10,7 +10,6 @@ User = get_user_model()
 class PubCreateModel(models.Model):
     """Абстрактная модель с полями публикации и даты создания."""
 
-
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Добавлено'
@@ -38,6 +37,7 @@ class Category(PubCreateModel):
             'разрешены символы латиницы, цифры, дефис и подчёркивание.'
         )
     )
+
     class Meta:
         verbose_name = 'категория'
         verbose_name_plural = 'Категории'
