@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.mail import send_mail
-from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.views.generic import (
@@ -144,8 +143,6 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.author = self.request.user
         post = Post.objects.get_post_data(self.kwargs['pk'])
-        if not post:
-            raise Http404("Post not found")
         form.instance.post = post
         if post.author != self.request.user:
             self.send_author_email(post)

@@ -1,2 +1,2 @@
 PAGINATION_QTY = 10
-limit = 30
+LIMIT = 30

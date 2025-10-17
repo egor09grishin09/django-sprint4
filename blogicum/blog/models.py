@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.urls import reverse
-from constants import limit
+
+from constants import LIMIT
 from blog.managers import PostManager
 
 User = get_user_model()
@@ -68,8 +69,10 @@ class Post(PubCreateModel):
     text = models.TextField(verbose_name='Текст')
     pub_date = models.DateTimeField(
         verbose_name='Дата и время публикации',
-        help_text='Если установить дату и время в будущем — '
-        'можно делать отложенные публикации.',
+        help_text=(
+            'Идентификатор страницы для URL; '
+            'разрешены символы латиницы, цифры, дефис и подчёркивание.'
+        )
     )
     author = models.ForeignKey(
         User,
@@ -137,4 +140,4 @@ class Comment(PubCreateModel):
         ordering = ('created_at',)
 
     def __str__(self):
-        return self.text[:limit]
+        return f'{self.author.username}: {self.text[:LIMIT]}'

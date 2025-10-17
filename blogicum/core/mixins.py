@@ -60,12 +60,11 @@ class PostQuerySetMixin:
             return Post.objects.post_published_query().filter(
                 pk=post_data.pk
             )
-        else:
-            if author == self.request.user:
-                return Post.objects.post_all_query().filter(author=author)
-            return Post.objects.post_published_query().filter(
-                author=author
-            )
+        if author == self.request.user:
+            return Post.objects.post_all_query().filter(author=author)
+        return Post.objects.post_published_query().filter(
+            author=author
+        )
 
 
 class NotAuthorRedirectMixin:
